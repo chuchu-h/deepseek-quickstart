@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>经典贪吃蛇游戏</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+    /* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* 游戏容器 */
+.game-container {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 800px;
+    padding: 30px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 游戏头部 */
+.game-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.game-header h1 {
+    color: #333;
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.game-header h1 i {
+    color: #667eea;
+}
+
+.subtitle {
+    color: #666;
+    font-size: 1.1em;
+    font-style: italic;
+}
+
+/* 分数面板 */
+.score-panel {
+    display: flex;
+    justify-content: space-around;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.score-item i {
+    font-size: 1.5em;
+    color: #667eea;
+}
+
+.current-score i { color: #4CAF50; }
+.high-score i { color: #FF9800; }
+.length i { color: #2196F3; }
+
+/* 游戏画布容器 */
+.game-canvas-container {
+    position: relative;
+    margin: 0 auto 25px;
+    width: fit-content;
+}
+
+#gameCanvas {
+    background-color: #1a1a2e;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: block;
+}
+
+/* 屏幕覆盖层 */
+.screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.screen-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.screen-content {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 90%;
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.screen-content h2 {
+    color: #333;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.screen-content p {
+    color: #666;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+/* 按钮样式 */
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f5f5f5;
+    color: #333;
+    border: 2px solid #ddd;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+
+.btn-control {
+    padding: 10px 20px;
+    background: #f0f0f0;
+    color: #333;
+    border: 2px solid #ddd;
+}
+
+.btn-control:hover {
+    background: #e0e0e0;
+}
+
+/* 控制信息 */
+.controls-info {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.controls-info h3 {
+    margin-bottom: 15px;
+    color: #555;
+}
+
+.control-keys {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.key-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+kbd {
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 1.1em;
+    min-width: 40px;
+    text-align: center;
+    box-shadow: 0 3px 0 #222;
+}
+
+/* 最终分数 */
+.final-score {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.final-score p {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+
+.new-record {
+    color: #FF9800;
+    font-weight: bold;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* 移动端控制 */
+.mobile-controls {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.control-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.control-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.9);
+    border: none;
+    color: white;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+    background: rgba(102, 126, 234, 1);
+}
+
+/* 控制面板 */
+.control-panel {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+/* 游戏说明 */
+.game-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e0e0e0;
+}
+
+.instructions h3 {
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.instructions ul {
+    list-style: none;
+    padding-left: 20px;
+}
+
+.instructions li {
+    color: #666;
+    margin-bottom: 10px;
+    padding-left: 25px;
+    position: relative;
+}
+
+.instructions li:before {
+    content: "•";
+    color: #667eea;
+    font-size: 1.5em;
+    position: absolute;
+    left: 0;
+    top: -3px;
+}
+
+.version-info {
+    text-align: center;
+    color: #888;
+    font-size: 0.9em;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .game-container {
+        padding: 15px;
+    }
+    
+    .game-header h1 {
+        font-size: 2em;
+    }
+    
+    .score-panel {
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    #gameCanvas {
+        width: 100%;
+        height: auto;
+        max-width: 400px;
+    }
+    
+    .mobile-controls {
+        display: flex;
+    }
+    
+    .control-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .screen-content {
+        padding: 20px;
+    }
+    
+    .control-btn {
+        width: 60px;
+        height: 60px;
+    }
+}
+</style>
+<body>
+    <div class="game-container">
+        <!-- 游戏标题 -->
+        <header class="game-header">
+            <h1><i class="fas fa-gamepad"></i> 经典贪吃蛇</h1>
+            <p class="subtitle">怀旧经典，挑战极限</p>
+        </header>
+
+        <!-- 游戏主区域 -->
+        <main class="game-main">
+            <!-- 分数面板 -->
+            <div class="score-panel">
+                <div class="score-item current-score">
+                    <i class="fas fa-star"></i>
+                    <span>当前分数: <span id="currentScore">0</span></span>
+                </div>
+                <div class="score-item high-score">
+                    <i class="fas fa-trophy"></i>
+                    <span>最高分: <span id="highScore">0</span></span>
+                </div>
+                <div class="score-item length">
+                    <i class="fas fa-snake"></i>
+                    <span>长度: <span id="snakeLength">3</span></span>
+                </div>
+            </div>
+
+            <!-- 游戏画布容器 -->
+            <div class="game-canvas-container">
+                <canvas id="gameCanvas" width="400" height="400"></canvas>
+                
+                <!-- 开始界面 -->
+                <div id="startScreen" class="screen-overlay active">
+                    <div class="screen-content">
+                        <h2><i class="fas fa-play-circle"></i> 开始游戏</h2>
+                        <p>使用方向键或WASD控制蛇的移动</p>
+                        <p>尽可能多吃食物，避免撞墙或撞到自己</p>
+                        <button id="startBtn" class="btn btn-primary">
+                            <i class="fas fa-play"></i> 开始游戏
+                        </button>
+                        <div class="controls-info">
+                            <h3>控制方式:</h3>
+                            <div class="control-keys">
+                                <div class="key-row">
+                                    <kbd><i class="fas fa-arrow-up"></i></kbd>
+                                    <span>或</span>
+                                    <kbd>W</kbd>
+                                </div>
+                                <div class="key-row">
+                                    <kbd><i class="fas fa-arrow-left"></i></kbd>
+                                    <kbd><i class="fas fa-arrow-down"></i></kbd>
+                                    <kbd><i class="fas fa-arrow-right"></i></kbd>
+                                    <span>或</span>
+                                    <kbd>A</kbd>
+                                    <kbd>S</kbd>
+                                    <kbd>D</kbd>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 暂停界面 -->
+                <div id="pauseScreen" class="screen-overlay">
+                    <div class="screen-content">
+                        <h2><i class="fas fa-pause-circle"></i> 游戏暂停</h2>
+                        <button id="resumeBtn" class="btn btn-primary">
+                            <i class="fas fa-play"></i> 继续游戏
+                        </button>
+                        <button id="restartBtn" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> 重新开始
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 结束界面 -->
+                <div id="gameOverScreen" class="screen-overlay">
+                    <div class="screen-content">
+                        <h2><i class="fas fa-times-circle"></i> 游戏结束</h2>
+                        <div class="final-score">
+                            <p>本次得分: <span id="finalScore">0</span></p>
+                            <p>最高分: <span id="finalHighScore">0</span></p>
+                            <p class="new-record" id="newRecordMsg"></p>
+                        </div>
+                        <button id="playAgainBtn" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> 再玩一次
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制按钮（移动端） -->
+            <div class="mobile-controls">
+                <div class="control-row">
+                    <button class="control-btn" id="upBtn">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                </div>
+                <div class="control-row">
+                    <button class="control-btn" id="leftBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button class="control-btn" id="downBtn">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <button class="control-btn" id="rightBtn">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 游戏控制面板 -->
+        <div class="control-panel">
+            <button id="pauseGameBtn" class="btn btn-control">
+                <i class="fas fa-pause"></i> 暂停
+            </button>
+            <button id="restartGameBtn" class="btn btn-control">
+                <i class="fas fa-redo"></i> 重新开始
+            </button>
+            <button id="toggleGridBtn" class="btn btn-control">
+                <i class="fas fa-th"></i> 网格: <span id="gridStatus">关</span>
+            </button>
+        </div>
+
+        <!-- 游戏说明 -->
+        <footer class="game-footer">
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> 游戏说明</h3>
+                <ul>
+                    <li>使用键盘方向键或WASD控制蛇的移动方向</li>
+                    <li>吃到红色食物可以增加长度和分数</li>
+                    <li>撞到墙壁或自己的身体游戏结束</li>
+                    <li>尽可能获得高分，挑战自己的记录！</li>
+                </ul>
+            </div>
+            <div class="version-info">
+                <p>版本: V1.0 MVP | 经典贪吃蛇游戏</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="game.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
